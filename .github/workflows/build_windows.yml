@@ -1,0 +1,60 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller build.spec --noconfirm
+
+      - name: List output directory
+        run: |
+          Get-ChildItem -Recurse dist/Qt6HelloWorld | Select-Object FullName, Length
+
+      - name: Calculate package size
+        run: |
+          $size = (Get-ChildItem -Recurse dist/Qt6HelloWorld | Measure-Object -Property Length -Sum).Sum
+          $sizeMB = [math]::Round($size / 1MB, 2)
+          Write-Host "Total package size: $sizeMB MB"
+          echo "PACKAGE_SIZE=$sizeMB MB" >> $env:GITHUB_ENV
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path dist/Qt6HelloWorld/* -DestinationPath Qt6HelloWorld-windows-portable.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qt6HelloWorld-windows-portable
+          path: Qt6HelloWorld-windows-portable.zip
+          retention-days: 30
+
+      - name: Upload uncompressed build (for size analysis)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qt6HelloWorld-windows-uncompressed
+          path: dist/Qt6HelloWorld/
+          retention-days: 7
