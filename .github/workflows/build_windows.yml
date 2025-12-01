@@ -83,14 +83,10 @@ jobs:
           Write-Host "Total package size: $sizeMB MB"
           echo "PACKAGE_SIZE=$sizeMB MB" >> $env:GITHUB_ENV
 
-      - name: Create ZIP archive
-        run: |
-          Compress-Archive -Path dist/Qt6HelloWorld/* -DestinationPath Qt6HelloWorld-windows-portable.zip
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Qt6HelloWorld-windows-portable
-          path: Qt6HelloWorld-windows-portable.zip
+          path: dist/Qt6HelloWorld/
           retention-days: 30
 
