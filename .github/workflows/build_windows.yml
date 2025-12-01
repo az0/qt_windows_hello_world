@@ -30,6 +30,48 @@ jobs:
         run: |
           pyinstaller build.spec --noconfirm
 
+      - name: Prune unused Qt/Windows files
+        run: |
+          $dist = 'dist/Qt6HelloWorld'
+          $pySide = Join-Path $dist '_internal\PySide6'
+          $remove = @(
+            'Qt6WebEngineCore.dll',
+            'Qt6WebEngineProcess.exe',
+            'Qt6WebEngineWidgets.dll',
+            'Qt6Designer.dll',
+            'Qt6DesignerComponents.dll',
+            'Qt6Pdf.dll',
+            'Qt6Quick.dll',
+            'Qt6QuickControls2.dll',
+            'Qt6QuickDialogs2QuickImpl.dll',
+            'Qt6QuickControls2Imagine.dll',
+            'Qt6Quick3DRuntimeRender.dll',
+            'Qt6ShaderTools.dll',
+            'Qt6Graphs.dll',
+            'Qt63DRender.dll',
+            'Qt6Qml.dll',
+            'Qt6QmlCompiler.dll',
+            'Qt6QuickWidgets.dll',
+            'Qt6WebChannel.dll',
+            'qtquickcontrols2fluentwinui3styleplugin.dll',
+            'Qt6Multimedia.dll',
+            'Qt6MultimediaWidgets.dll'
+          )
+          foreach ($name in $remove) {
+            $path = Join-Path $pySide $name
+            if (Test-Path $path) { Remove-Item $path -Force }
+          }
+          $patterns = @('api-*.dll', 'api-ms-*.dll', 'opengl32sw.dll', 'avcodec-*.dll', 'avformat-*.dll')
+          foreach ($pattern in $patterns) {
+            Get-ChildItem -Path $dist -Filter $pattern -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+          }
+          $resources = Join-Path $dist 'resources'
+          if (Test-Path $resources) {
+            Get-ChildItem -Path $resources -Filter 'qtwebengine*' -Force -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse
+          }
+          $qml = Join-Path $dist 'qml'
+          if (Test-Path $qml) { Remove-Item $qml -Recurse -Force }
+
       - name: List output directory
         run: |
           Get-ChildItem -Recurse dist/Qt6HelloWorld | Select-Object FullName, Length
